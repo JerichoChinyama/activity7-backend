@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS records (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(120) NOT NULL,
+  category VARCHAR(60) NOT NULL,
+  description TEXT NOT NULL,
+  status VARCHAR(20) NOT NULL
+);
