@@ -18,20 +18,14 @@ app.use(
       if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error('Not allowed by CORS'));
+      const corsErr = new Error('Not allowed by CORS');
+      corsErr.statusCode = 403;
+      return callback(corsErr);
     }
   })
 );
 
 app.use(express.json());
-
-// Handle malformed JSON bodies cleanly with 400
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    return res.status(400).json({ message: 'Malformed JSON in request body.' });
-  }
-  return next(err);
-});
 
 // Root HTML API guide
 app.get('/', (req, res) => {
@@ -70,6 +64,7 @@ app.get('/health', async (req, res) => {
     await pool.query('SELECT 1');
     return res.status(200).json({ status: 'ok', database: 'connected' });
   } catch (err) {
+    console.error('Health check failed:', err);
     return res.status(500).json({ status: 'error', database: 'disconnected' });
   }
 });
@@ -82,10 +77,19 @@ app.use((req, res) => {
   return res.status(404).json({ message: 'Route not found.' });
 });
 
-// Generic 500 error handler
+// Central error handler (malformed JSON, CORS, and unexpected errors)
 app.use((err, req, res, next) => {
-  console.error(err);
-  return res.status(500).json({ message: 'Internal server error.' });
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ message: 'Malformed JSON in request body.' });
+  }
+
+  if (err && err.statusCode === 403) {
+    return res.status(403).json({ message: 'Not allowed by CORS.' });
+  }
+
+  console.error('Unhandled server error:', err);
+  const status = Number.isInteger(err && err.statusCode) ? err.statusCode : 500;
+  return res.status(status).json({ message: 'Internal server error.' });
 });
 
 app.listen(PORT, () => {

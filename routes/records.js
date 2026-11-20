@@ -18,7 +18,7 @@ function validateRecordPayload(body) {
     return 'Request body must be a valid JSON object.';
   }
 
-  if ('id' in body) {
+  if (Object.prototype.hasOwnProperty.call(body, 'id')) {
     return 'Do not supply id; it is generated automatically.';
   }
 
@@ -36,7 +36,7 @@ function validateRecordPayload(body) {
     return 'Description must be a string between 5 and 1000 characters.';
   }
 
-  if (typeof status !== 'string' || !ALLOWED_STATUSES.includes(status)) {
+  if (typeof status !== 'string' || !ALLOWED_STATUSES.includes(status.trim())) {
     return `Status must be one of: ${ALLOWED_STATUSES.join(', ')}.`;
   }
 
@@ -88,7 +88,7 @@ router.post('/', async (req, res, next) => {
   const title = req.body.title.trim();
   const category = req.body.category.trim();
   const description = req.body.description.trim();
-  const status = req.body.status;
+  const status = req.body.status.trim();
 
   try {
     const result = await pool.query(
@@ -119,7 +119,7 @@ router.put('/:id', async (req, res, next) => {
   const title = req.body.title.trim();
   const category = req.body.category.trim();
   const description = req.body.description.trim();
-  const status = req.body.status;
+  const status = req.body.status.trim();
 
   try {
     const result = await pool.query(
